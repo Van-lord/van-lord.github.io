@@ -30,7 +30,7 @@ jobs:
       - name: Build static portfolio
         run: npm run build:pages
       - name: Validate published content and links
-        run: node scripts/pages-check.mjs
+        run: npm run check
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:

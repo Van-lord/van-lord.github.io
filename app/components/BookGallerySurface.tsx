@@ -12,16 +12,37 @@ export type BookGalleryPhase = "hidden" | "preparing" | "page" | "expanding" | "
 type BookGallerySurfaceProps = {
   placement: GalleryPagePlacement | null;
   phase: BookGalleryPhase;
+  layout?: "portrait" | "wide";
   onExpanded: () => void;
 };
 
 const fullViewportMatrix = "matrix(1, 0, 0, 1, 0, 0)";
 const pageMatrix = ({ a, b, c, d, e, f }: GalleryPagePlacement) => `matrix(${a}, ${b}, ${c}, ${d}, ${e}, ${f})`;
 
+// A portrait page keeps one CSS pixel's horizontal and vertical scale equal.
+// The physical page can gain a little margin when Safari changes its toolbar
+// height; the archive itself is never flattened to fill a landscape rectangle.
+function fitPortraitPage(placement: GalleryPagePlacement, width: number, height: number): GalleryPagePlacement {
+  const horizontal = Math.hypot(placement.a, placement.b);
+  const vertical = Math.hypot(placement.c, placement.d);
+  if (!horizontal || !vertical) return placement;
+  const scale = Math.min(horizontal, vertical);
+  const a = placement.a / horizontal * scale;
+  const b = placement.b / horizontal * scale;
+  const c = placement.c / vertical * scale;
+  const d = placement.d / vertical * scale;
+  return {
+    a, b, c, d,
+    e: placement.e + ((placement.a - a) * width + (placement.c - c) * height) / 2,
+    f: placement.f + ((placement.b - b) * width + (placement.d - d) * height) / 2,
+  };
+}
+
 /** The last physical album page and the usable archive are one DOM surface. */
-export function BookGallerySurface({ placement, phase, onExpanded }: BookGallerySurfaceProps) {
+export function BookGallerySurface({ placement, phase, layout = "wide", onExpanded }: BookGallerySurfaceProps) {
   const [mounted, setMounted] = useState(false);
   const [expandedTarget, setExpandedTarget] = useState(false);
+  const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const surface = useRef<HTMLElement>(null);
   const lastPlacement = useRef<GalleryPagePlacement | null>(null);
   const phaseRef = useRef(phase);
@@ -31,7 +52,25 @@ export function BookGallerySurface({ placement, phase, onExpanded }: BookGallery
   phaseRef.current = phase;
   if (phase === "page" && placement) lastPlacement.current = placement;
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      setViewport((current) => current.width === width && current.height === height ? current : { width, height });
+    };
+    const schedule = () => { if (!frame) frame = window.requestAnimationFrame(measure); };
+    measure();
+    setMounted(true);
+    window.addEventListener("resize", schedule);
+    window.visualViewport?.addEventListener("resize", schedule);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", schedule);
+      window.visualViewport?.removeEventListener("resize", schedule);
+    };
+  }, []);
   useEffect(() => { expandedCallback.current = onExpanded; }, [onExpanded]);
 
   function finishExpansion() {
@@ -85,13 +124,20 @@ export function BookGallerySurface({ placement, phase, onExpanded }: BookGallery
 
   if (!mounted || phase === "hidden") return null;
 
-  const source = placement ?? lastPlacement.current ?? {
-    a: .42, b: 0, c: 0, d: .32,
-    e: window.innerWidth * .5, f: window.innerHeight * .4,
-  };
+  const width = viewport.width || window.innerWidth;
+  const height = viewport.height || window.innerHeight;
+  const fallback = layout === "portrait"
+    ? { a: .78, b: 0, c: 0, d: .78, e: width * .11, f: height * .12 }
+    : { a: .42, b: 0, c: 0, d: .32, e: width * .5, f: height * .4 };
+  const rawSource = placement ?? lastPlacement.current ?? fallback;
+  const source = layout === "portrait" ? fitPortraitPage(rawSource, width, height) : rawSource;
   const fillsViewport = phase === "active" || (phase === "expanding" && expandedTarget);
   const visible = phase === "active" || phase === "expanding" || (phase === "page" && Boolean(placement));
-  const style: CSSProperties = { transform: fillsViewport ? fullViewportMatrix : pageMatrix(source) };
+  const style: CSSProperties = {
+    width,
+    height,
+    transform: fillsViewport ? fullViewportMatrix : pageMatrix(source),
+  };
   const transitionEnded = (event: TransitionEvent<HTMLElement>) => {
     if (event.target === event.currentTarget && event.propertyName === "transform") finishExpansion();
   };
@@ -103,6 +149,7 @@ export function BookGallerySurface({ placement, phase, onExpanded }: BookGallery
     className="book-gallery-surface"
     style={style}
     data-phase={phase}
+    data-layout={layout}
     data-visible={visible}
     data-expanding={phase === "expanding" && expandedTarget}
     aria-label="Photography gallery"

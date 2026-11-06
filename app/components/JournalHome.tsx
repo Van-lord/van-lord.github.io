@@ -34,6 +34,7 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
   const [tab, setTab] = useState<ResearchTab>("overview");
   const [screenBounds, setScreenBounds] = useState<ScreenBounds | null>(null);
   const [panelReady, setPanelReady] = useState(false);
+  const [layout, setLayout] = useState<"portrait" | "wide">("wide");
   const [galleryPhase, setGalleryPhase] = useState<GalleryPhase>("hidden");
   const [galleryPlacement, setGalleryPlacement] = useState<GalleryPagePlacement | null>(null);
   const galleryPhaseRef = useRef<GalleryPhase>("hidden");
@@ -45,6 +46,13 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
   const lastControl = useRef<HTMLElement | null>(null);
   const safetyTimer = useRef<number | null>(null);
   const homeTitle = useRef("Jiawei Guo — Research & Photography");
+
+  useEffect(() => {
+    const updateLayout = () => setLayout(window.innerWidth <= 1100 && window.innerWidth / window.innerHeight < .88 ? "portrait" : "wide");
+    updateLayout();
+    window.addEventListener("resize", updateLayout, { passive: true });
+    return () => window.removeEventListener("resize", updateLayout);
+  }, []);
 
   function clearTimer() { if (safetyTimer.current !== null) window.clearTimeout(safetyTimer.current); safetyTimer.current = null; }
 
@@ -182,7 +190,7 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
 
   const screenStyle: CSSProperties | undefined = screenBounds ? { left: screenBounds.left, top: screenBounds.top, width: screenBounds.width, height: screenBounds.height } : undefined;
 
-  return <><main className="journal-home j-single" id="top" data-view={view} data-archive-active={galleryActive} inert={galleryActive} aria-hidden={galleryActive}>
+  return <><main className="journal-home j-single" id="top" data-view={view} data-layout={layout} data-research-ready={view === "research" && panelReady} data-archive-active={galleryActive} inert={galleryActive} aria-hidden={galleryActive}>
     <header className="j-header" inert={view !== "desk"} aria-hidden={view !== "desk"}>
       <a className="j-name" href="#top" onClick={(event) => { event.preventDefault(); closeDesk(); }} aria-label="Jiawei Guo, home">Jiawei Guo<span lang="zh-CN">郭家威</span></a>
       <nav aria-label="Primary navigation"><a href="#research" onClick={(event) => follow(event, "research")}>Research</a><a href={galleryHref} onClick={(event) => follow(event, "gallery")}>Gallery<Arrow /></a><a href={`mailto:${email}`}>Say hello<Arrow /></a></nav>
@@ -194,7 +202,7 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
         <h1 id="j-title"><span className="j-title-first">Jiawei</span><em className="j-title-second">Guo.</em></h1>
       </div>
       <div className="j-scene-canvas" ref={sceneRef}>
-        <DeskScene immersive focus={view} onSelect={open} onFocusSettled={settled} onScreenBounds={setScreenBounds} onGalleryPage={receiveGalleryPage} />
+        <DeskScene key={layout} layout={layout} immersive focus={view} onSelect={open} onFocusSettled={settled} onScreenBounds={setScreenBounds} onGalleryPage={receiveGalleryPage} />
         <section id="research" ref={screenRef} className={`j-research-screen${screenBounds ? "" : " j-screen-fallback"}`} style={screenStyle} hidden={view !== "research" || !panelReady} aria-label="Research on Jiawei’s computer screen">
           <div className="j-screen-topbar"><span>J. GUO / RESEARCH</span><span>LEHIGH UNIVERSITY</span></div>
           <nav className="j-screen-tabs" role="tablist" aria-label="Research pages">
@@ -243,5 +251,5 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
       <FriesNote />
       <nav aria-label="Contact and links"><a href="/Jiawei_Guo_CV.pdf" target="_blank" rel="noreferrer">CV<Arrow /></a><a href={`mailto:${email}`}>Email<Arrow /></a><a href={studioHref}>Studio<Arrow /></a><span>© 2026</span></nav>
     </footer>
-  </main><BookGallerySurface placement={galleryPlacement} phase={galleryPhase} onExpanded={completeGallery} /></>;
+  </main><BookGallerySurface placement={galleryPlacement} layout={layout} phase={galleryPhase} onExpanded={completeGallery} /></>;
 }

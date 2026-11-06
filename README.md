@@ -25,3 +25,5 @@ The [Gallery](https://van-lord.github.io/gallery/) and all seven photo stories a
 ## Assets
 
 Photographs and CV belong to Jiawei Guo. Cormorant Garamond and Smiley Sans are included with their OFL licenses in `public/fonts/`. The scene is authored in Three.js and has an SVG fallback.
+
+Portrait screens use a dedicated reading window and a portrait photo album. Touch or pen dragging changes the desk viewpoint; deliberate taps open the computer or album. The drag recognizer is covered by tests for accidental taps, cancellation and multiple pointers.

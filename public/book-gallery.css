@@ -14,6 +14,7 @@
   color-scheme: dark;
   transform-origin: 0 0;
   contain: layout style;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 0 0 1px rgb(8 9 9 / 40%);
 }
 
@@ -41,6 +42,29 @@
 
 .book-gallery-surface #gallery-index-title:focus {
   outline: none;
+}
+
+.book-gallery-surface[data-layout="portrait"] {
+  height: 100dvh;
+  min-height: 0;
+}
+
+.book-gallery-surface[data-layout="portrait"] .gallery-index-nav {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: max(18px, env(safe-area-inset-left, 0px));
+  padding-right: max(18px, env(safe-area-inset-right, 0px));
+  height: calc(64px + env(safe-area-inset-top, 0px));
+}
+
+.book-gallery-surface[data-layout="portrait"] .gallery-index-nav a { min-height: 44px; }
+
+.book-gallery-surface[data-layout="portrait"] .gallery-index-intro {
+  min-height: calc(100dvh - 80px - env(safe-area-inset-top, 0px));
+}
+
+.book-gallery-surface[data-layout="portrait"][data-phase="active"] {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  touch-action: pan-y pinch-zoom;
 }
 
 @media (prefers-reduced-motion: reduce) {

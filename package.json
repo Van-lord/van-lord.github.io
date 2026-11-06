@@ -9,7 +9,7 @@
   "scripts": {
     "build": "node scripts/build-pages.mjs",
     "build:pages": "node scripts/build-pages.mjs",
-    "check": "node scripts/pages-check.mjs"
+    "check": "node scripts/pages-check.mjs && node --experimental-strip-types --test tests/desk-touch.test.mjs"
   },
   "dependencies": {
     "react": "19.2.6",
