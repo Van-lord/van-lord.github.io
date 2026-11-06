@@ -72,9 +72,9 @@ body:has(.j-single) {
   justify-content: space-between;
   gap: 24px;
 }
-.j-single .j-name { display: inline-flex; align-items: baseline; gap: 16px; font-family: var(--j-serif); font-size: 28px; font-weight: 600; letter-spacing: -.03em; white-space: nowrap; }
-.j-single .j-name span { font-family: "Songti SC", "Noto Serif CJK SC", serif; font-size: 13px; font-weight: 400; letter-spacing: .17em; }
-.j-single .j-header nav { display: flex; align-items: center; gap: 32px; font-size: 16px; }
+.j-single .j-name { display: inline-flex; align-items: baseline; gap: 16px; font-family: var(--j-serif); font-size: 32px; font-weight: 600; letter-spacing: -.03em; white-space: nowrap; }
+.j-single .j-name span { font-family: "Songti SC", "Noto Serif CJK SC", serif; font-size: 16px; font-weight: 400; letter-spacing: .17em; }
+.j-single .j-header nav { display: flex; align-items: center; gap: 32px; font-size: 19px; }
 .j-single .j-header nav a { display: inline-flex; align-items: center; min-height: 44px; white-space: nowrap; }
 .j-single .j-header nav a:hover { color: var(--j-rust); }
 .j-single .j-header-note { font-family: "Songti SC", serif; font-size: 13px; letter-spacing: .2em; color: var(--j-muted); }
@@ -89,21 +89,28 @@ body:has(.j-single) {
 .j-title-second { position: absolute; display: block; white-space: nowrap; }
 .j-title-first { left: 9%; top: 26%; font-size: clamp(110px, 14.8vw, 214px); }
 .j-title-second { left: 68%; top: 66%; font-size: clamp(100px, 13.7vw, 190px); color: var(--j-rust); }
-.j-hello { position: absolute; left: 10.5%; top: 20%; font-size: 15px; line-height: 1.5; letter-spacing: .015em; color: #6a7162; }
-.j-hello::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 10px; border-radius: 50%; vertical-align: middle; background: var(--j-rust); }
-.j-identity-note { position: absolute; z-index: 3; left: 77%; top: 25%; width: 230px; max-width: 23%; pointer-events: none; font-size: 18px; line-height: 1.65; color: #606959; transition: opacity 260ms ease; }
-.j-identity-note p + p { margin-top: 10px; }
-.j-identity-note small { display: block; margin-top: 18px; font-size: 12px; line-height: 1.6; letter-spacing: .09em; color: #7b8173; }
+.j-hello { position: absolute; left: 10.5%; top: 17%; display: flex; align-items: baseline; gap: 14px; line-height: 1; color: #657052; }
+.j-hello .j-hello-greeting { font-family: var(--j-serif); font-size: 48px; font-weight: 500; letter-spacing: -.04em; color: var(--j-rust); transform: rotate(-5deg); }
+.j-hello-intro { font-size: 24px; letter-spacing: -.03em; }
+.j-identity-note { position: absolute; z-index: 3; left: 76%; top: 22%; width: 22%; pointer-events: none; color: #59644b; transition: opacity 260ms ease; }
+.j-role-research > span { display: block; font-size: 23px; line-height: 1.2; letter-spacing: -.025em; }
+.j-role-research > strong { display: block; margin-top: 1px; font-family: var(--j-serif); font-size: 50px; font-weight: 500; line-height: .98; letter-spacing: -.045em; }
+.j-identity-note .j-role-photo { margin-top: 20px; transform: rotate(-3deg); transform-origin: left; color: var(--j-rust); }
+.j-role-photo > em { display: block; font-size: 38px; line-height: .98; letter-spacing: -.035em; }
+.j-role-photo > em + em { margin-top: 3px; font-size: 34px; }
 .j-object-labels { position: absolute; z-index: 8; inset: 0; pointer-events: none; transition: opacity 200ms ease; }
-.j-object-labels button { position: absolute; min-height: 44px; border: 0; border-bottom: 1px solid #a2aa95; padding: 5px 1px; background: transparent; color: #4b5742; font-size: 16px; line-height: 1.4; pointer-events: auto; }
-.j-object-labels button::after { content: ""; position: absolute; height: 33px; width: 1px; top: calc(100% + 8px); left: 24px; transform: rotate(-21deg); transform-origin: top; background: #abb19f; pointer-events: none; }
-.j-object-labels button:hover { color: var(--j-rust); border-color: var(--j-rust); }
-.j-label-research { left: 42%; top: 14%; transform: rotate(-4deg); }
-.j-label-gallery { left: 65%; top: 80%; transform: rotate(3deg); }
-.j-object-labels .j-label-gallery::after { height: 38px; top: auto; bottom: calc(100% + 4px); left: 15px; transform: rotate(28deg); transform-origin: bottom; }
+.j-object-labels button { position: absolute; display: inline-flex; align-items: center; gap: 11px; min-height: 56px; border: 0; padding: 3px 0; background: transparent; color: #536044; font-family: var(--j-serif); font-style: italic; font-weight: 500; font-size: 46px; line-height: 1; letter-spacing: -.045em; pointer-events: auto; transition: color 180ms ease; }
+.j-label-word { display: block; }
+.j-label-arrow { display: block; flex: 0 0 auto; width: 49px; height: 40px; color: #7f8b6d; transition: transform 240ms ease, color 180ms ease; }
+.j-object-labels button:hover { color: var(--j-rust); }
+.j-object-labels button:hover .j-label-arrow { color: var(--j-rust); transform: translate(4px, -4px); }
+.j-label-research { left: 34%; top: 14%; transform: rotate(-4deg); }
+.j-label-gallery { left: 62%; top: 81%; transform: rotate(3deg); }
+.j-label-gallery .j-label-arrow { order: -1; transform: scaleX(-1) rotate(-8deg); }
+.j-object-labels .j-label-gallery:hover .j-label-arrow { transform: translate(-4px, -4px) scaleX(-1) rotate(-8deg); }
 
 .j-home-footer { position: absolute; z-index: 15; left: 5.5%; right: 5.5%; bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; gap: 28px; transition: opacity 180ms ease; }
-.j-home-footer nav { display: flex; align-items: center; gap: 24px; font-size: 14px; }
+.j-home-footer nav { display: flex; align-items: center; gap: 24px; font-size: 16px; }
 .j-home-footer a { display: inline-flex; align-items: center; min-height: 38px; }
 .j-home-footer a:hover { color: var(--j-rust); }
 .j-home-footer small { color: #858c7a; font-size: 12px; white-space: nowrap; }
@@ -178,39 +185,51 @@ body:has(.j-single) {
 @media (min-width: 1600px) {
   .j-title-first { left: 13%; top: 24%; font-size: 230px; }
   .j-title-second { left: 67%; top: 60%; font-size: 200px; }
-  .j-identity-note { left: 75%; top: 25%; }
+  .j-identity-note { left: 75%; top: 22%; width: 22%; }
 }
 @media (max-width: 1050px) and (min-width: 761px) {
   .j-single .j-header { left: 4%; right: 4%; }
   .j-single .j-header-note { display: none; }
   .j-title-first { left: 5%; top: 27%; font-size: 150px; }
   .j-title-second { left: 70%; top: 62%; font-size: 123px; }
-  .j-identity-note { left: 73%; top: 21%; max-width: 24%; font-size: 16px; }
-  .j-label-gallery { left: 77%; top: 79%; }
+  .j-identity-note { left: 74%; top: 21%; width: 24%; }
+  .j-role-research > span { font-size: 21px; }
+  .j-role-research > strong { font-size: 43px; }
+  .j-role-photo > em { font-size: 32px; }
+  .j-role-photo > em + em { font-size: 29px; }
+  .j-label-research { left: 30%; }
+  .j-label-gallery { left: 65%; top: 80%; }
+  .j-object-labels button { font-size: 40px; }
+  .j-label-arrow { width: 43px; height: 35px; }
   .j-home-footer { left: 4%; right: 4%; }
-  .j-home-footer nav { gap: 18px; font-size: 13px; }
+  .j-home-footer nav { gap: 18px; font-size: 16px; }
 }
 @media (max-width: 760px) {
   .journal-home.j-single { font-size: 16px; }
   .j-single .j-header { left: 24px; right: 24px; height: 78px; gap: 15px; }
-  .j-single .j-name { font-size: 24px; }
+  .j-single .j-name { font-size: 26px; }
   .j-single .j-name span,
   .j-single .j-header-note { display: none; }
-  .j-single .j-header nav { gap: 18px; font-size: 14px; }
+  .j-single .j-header nav { gap: 17px; font-size: 16px; }
   .j-single .j-header nav a:last-child { display: none; }
   .j-scene-canvas { inset: 34% -8% 15%; }
   .j-title-first { left: 8%; top: 20%; font-size: clamp(91px, 23vw, 140px); }
   .j-title-second { left: 55%; top: 77%; font-size: clamp(84px, 20vw, 126px); }
-  .j-hello { left: 9%; top: 15%; font-size: 13px; }
-  .j-identity-note { left: 9%; top: 32%; width: 76%; max-width: 76%; font-size: 14px; line-height: 1.6; }
-  .j-identity-note small { display: none; }
-  .j-object-labels button { min-height: 42px; font-size: 14px; }
-  .j-label-research { left: 10%; top: 45%; }
-  .j-object-labels .j-label-research::after { height: 21px; }
-  .j-label-gallery { left: 65%; top: 86%; }
-  .j-object-labels .j-label-gallery::after { height: 25px; }
+  .j-hello { left: 9%; top: 13%; gap: 10px; }
+  .j-hello .j-hello-greeting { font-size: 34px; }
+  .j-hello-intro { font-size: 21px; }
+  .j-identity-note { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; left: 9%; top: 31%; width: 82%; }
+  .j-role-research > span { font-size: 20px; line-height: 1.1; }
+  .j-role-research > strong { margin-top: 3px; font-size: 34px; line-height: 1; }
+  .j-identity-note .j-role-photo { margin-top: 0; transform: rotate(-3deg); }
+  .j-role-photo > em { font-size: 30px; line-height: 1.02; }
+  .j-role-photo > em + em { margin-top: 2px; font-size: 25px; }
+  .j-object-labels button { gap: 7px; min-height: 44px; font-size: 30px; }
+  .j-label-arrow { width: 30px; height: 25px; }
+  .j-label-research { left: 9%; top: 45%; }
+  .j-label-gallery { left: auto; right: 110px; top: 85%; }
   .j-home-footer { left: 24px; right: 24px; bottom: 18px; align-items: flex-end; gap: 14px; }
-  .j-home-footer nav { justify-content: flex-end; flex-wrap: wrap; column-gap: 16px; row-gap: 0; width: 70px; flex: 0 0 70px; font-size: 13px; }
+  .j-home-footer nav { justify-content: flex-end; flex-wrap: wrap; column-gap: 16px; row-gap: 0; width: 70px; flex: 0 0 70px; font-size: 15px; }
   .j-home-footer small, .j-home-footer nav > a:nth-of-type(3), .j-home-footer nav > span { display: none; }
   .j-back-to-desk { top: 17px; right: 24px; min-height: 42px; padding: 7px 11px; font-size: 13px; }
   .j-single:not([data-view="desk"]) .j-scene-canvas { inset: 0; }
@@ -242,11 +261,17 @@ body:has(.j-single) {
   .j-single .j-header { height: 70px; }
   .j-title-first { top: 24%; font-size: 128px; }
   .j-title-second { top: 60%; font-size: 116px; }
-  .j-hello { top: 17%; }
-  .j-identity-note { top: 21%; font-size: 15px; }
-  .j-identity-note small { margin-top: 12px; }
+  .j-hello { top: 15.5%; }
+  .j-hello .j-hello-greeting { font-size: 40px; }
+  .j-hello-intro { font-size: 23px; }
+  .j-identity-note { top: 21%; }
+  .j-role-research > span { font-size: 22px; }
+  .j-role-research > strong { font-size: 43px; }
+  .j-identity-note .j-role-photo { margin-top: 12px; }
+  .j-role-photo > em { font-size: 33px; }
+  .j-role-photo > em + em { font-size: 29px; }
   .j-home-footer { bottom: 15px; }
-  .j-label-research { top: 18%; }
+  .j-label-research { top: 14%; }
   .j-label-gallery { top: 76%; }
   .j-screen-topbar { padding-top: 10px; padding-bottom: 5px; }
   .j-screen-tabs button { min-height: 38px; }
@@ -254,12 +279,28 @@ body:has(.j-single) {
 }
 @media (max-width: 370px) {
   .j-single .j-header { left: 18px; right: 18px; }
-  .j-single .j-header nav { gap: 14px; font-size: 13px; }
+  .j-single .j-header nav { gap: 14px; font-size: 16px; }
   .j-title-first { font-size: 86px; }
   .j-title-second { font-size: 78px; left: 61%; }
-  .j-identity-note { left: 47%; font-size: 13px; }
+  .j-identity-note { top: 30%; gap: 10px; }
+  .j-role-research > span { font-size: 17px; white-space: nowrap; }
+  .j-role-research > strong { font-size: 32px; }
+  .j-role-photo > em { font-size: 28px; }
+  .j-role-photo > em + em { font-size: 24px; }
+  .j-label-gallery { right: 102px; }
   .j-home-footer { left: 18px; right: 18px; }
-  .j-home-footer nav { gap: 13px; font-size: 12px; }
+  .j-home-footer nav { gap: 13px; font-size: 15px; }
+}
+@media (max-width: 760px) and (max-height: 740px) {
+  .j-single .j-header { height: 64px; }
+  .j-hello { top: 10%; }
+  .j-title-first { top: 17%; }
+  .j-identity-note { top: 32%; }
+  .j-single[data-view="desk"] .j-scene-canvas { inset: 42% -8% 18%; }
+  .j-title-second { top: 71%; }
+  .j-label-gallery { left: 9%; right: auto; top: 72%; }
+  .j-label-gallery .j-label-arrow { order: 1; transform: none; }
+  .j-object-labels .j-label-gallery:hover .j-label-arrow { transform: translate(4px, -4px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .j-single *, .j-single *::before, .j-single *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

@@ -19,6 +19,10 @@ export type JournalHomeProps = {
 
 function Arrow() { return <span aria-hidden="true" className="j-arrow">↗</span>; }
 
+function ObjectArrow() {
+  return <svg className="j-label-arrow" viewBox="0 0 60 48" fill="none" aria-hidden="true" focusable="false"><path d="M4 42C28 42 27 8 53 8M40 2L53 8L46 21" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
 function PublicationRow({ paper }: { paper: Publication }) {
   return <li className="j-paper"><span className="j-paper-year">{paper.year}</span><div><h3><a href={`https://scholar.google.com/scholar?q=${encodeURIComponent(paper.title)}`} target="_blank" rel="noreferrer">{paper.title}<Arrow /></a></h3><p className="j-paper-authors">{paper.authors.split(/(J\. Guo)/).map((part, index) => part === "J. Guo" ? <strong key={index}>{part}</strong> : part)}</p><p className="j-paper-venue">{paper.journal}</p></div></li>;
 }
@@ -142,7 +146,7 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
 
     <section className="j-scene-composition" aria-labelledby="j-title">
       <div className="j-composition-type" aria-hidden={view !== "desk"}>
-        <p className="j-hello">Hello, I’m</p>
+        <p className="j-hello"><em className="j-hello-greeting">Hello,</em>{" "}<span className="j-hello-intro">I’m</span></p>
         <h1 id="j-title"><span className="j-title-first">Jiawei</span><em className="j-title-second">Guo.</em></h1>
       </div>
       <div className="j-scene-canvas" ref={sceneRef}>
@@ -180,10 +184,13 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
           </div>
         </section>
       </div>
-      <p className="j-identity-note" aria-hidden={view !== "desk"}>Computer vision researcher.<br /><em>Photographer, after hours.</em></p>
+      <div className="j-identity-note" aria-hidden={view !== "desk"}>
+        <p className="j-role-research"><span>Computer vision</span>{" "}<strong>researcher.</strong></p>
+        <p className="j-role-photo"><em>Photographer,</em>{" "}<em>after hours.</em></p>
+      </div>
       <div className="j-object-labels" aria-label="Explore my desk" inert={view !== "desk"} aria-hidden={view !== "desk"}>
-        <button type="button" className="j-label-research" onClick={() => open("research")}>Research<Arrow /></button>
-        <button type="button" className="j-label-gallery" onClick={() => open("gallery")}>Gallery<Arrow /></button>
+        <button type="button" className="j-label-research" onClick={() => open("research")}><span className="j-label-word">Research</span><ObjectArrow /></button>
+        <button type="button" className="j-label-gallery" onClick={() => open("gallery")}><span className="j-label-word">Gallery</span><ObjectArrow /></button>
       </div>
     </section>
 
