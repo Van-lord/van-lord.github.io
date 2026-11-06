@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type KeyboardEvent } from "react";
-import { DeskScene, type ScreenBounds } from "./DeskScene";
+import { DeskScene, type GalleryPagePlacement, type ScreenBounds } from "./DeskScene";
 import { FriesNote } from "./FriesNote";
+import { BookGallerySurface } from "./BookGallerySurface";
 import "../../public/journal.css";
 
 type Publication = { title: string; journal: string; year: string; authors: string };
 type View = "desk" | "research" | "gallery";
 type ResearchTab = "overview" | "papers" | "about";
+type GalleryPhase = "hidden" | "preparing" | "page" | "expanding" | "active";
 export type JournalHomeProps = {
   email: string;
   linkedInUrl: string;
@@ -32,23 +34,61 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
   const [tab, setTab] = useState<ResearchTab>("overview");
   const [screenBounds, setScreenBounds] = useState<ScreenBounds | null>(null);
   const [panelReady, setPanelReady] = useState(false);
-  const [galleryCover, setGalleryCover] = useState(false);
+  const [galleryPhase, setGalleryPhase] = useState<GalleryPhase>("hidden");
+  const [galleryPlacement, setGalleryPlacement] = useState<GalleryPagePlacement | null>(null);
+  const galleryPhaseRef = useRef<GalleryPhase>("hidden");
+  const galleryActive = galleryPhase === "active";
   const viewRef = useRef<View>("desk");
   const sceneRef = useRef<HTMLDivElement>(null);
   const screenRef = useRef<HTMLElement>(null);
   const backRef = useRef<HTMLButtonElement>(null);
   const lastControl = useRef<HTMLElement | null>(null);
   const safetyTimer = useRef<number | null>(null);
+  const homeTitle = useRef("Jiawei Guo — Research & Photography");
 
   function clearTimer() { if (safetyTimer.current !== null) window.clearTimeout(safetyTimer.current); safetyTimer.current = null; }
 
-  function closeDesk() {
+  function changeGalleryPhase(next: GalleryPhase) {
+    galleryPhaseRef.current = next;
+    setGalleryPhase(next);
+  }
+
+  function receiveGalleryPage(placement: GalleryPagePlacement | null) {
+    if (viewRef.current !== "gallery" || galleryPhaseRef.current === "active") return;
+    setGalleryPlacement(placement);
+    if (placement && galleryPhaseRef.current === "preparing") changeGalleryPhase("page");
+  }
+
+  function restoreGallery() {
+    clearTimer();
+    viewRef.current = "gallery";
+    setView("gallery");
+    setPanelReady(false);
+    changeGalleryPhase("active");
+    document.title = "Photo Archive — Jiawei Guo";
+  }
+
+  function completeGallery() {
+    if (viewRef.current !== "gallery" || galleryPhaseRef.current === "active") return;
+    restoreGallery();
+    const destination = new URL(galleryHref, window.location.href);
+    if (destination.origin !== window.location.origin) { window.location.assign(destination.href); return; }
+    window.history.pushState({ ...window.history.state, journalGallery: true }, "", destination.pathname + destination.search + destination.hash);
+  }
+
+  function resetDesk() {
     clearTimer();
     viewRef.current = "desk";
     setView("desk");
     setPanelReady(false);
-    setGalleryCover(false);
+    changeGalleryPhase("hidden");
+    setGalleryPlacement(null);
     setScreenBounds(null);
+    document.title = homeTitle.current;
+  }
+
+  function closeDesk() {
+    resetDesk();
     if (window.location.hash === "#research") window.history.replaceState(null, "", window.location.pathname + window.location.search);
     window.requestAnimationFrame(() => lastControl.current?.focus({ preventScroll: true }));
   }
@@ -57,14 +97,10 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
     if (viewRef.current !== target) return;
     clearTimer();
     if (target === "gallery") {
-      // Carry the same full-bleed print across the document navigation.
-      // The Gallery reveals itself beneath this photograph on arrival.
-      setGalleryCover(true);
-      const destination = new URL(galleryHref, window.location.href);
-      destination.searchParams.set("from", "desk");
-      safetyTimer.current = window.setTimeout(() => {
-        if (viewRef.current === "gallery") window.location.assign(destination.href);
-      }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 320);
+      if (galleryPhaseRef.current === "active") return;
+      // The live Gallery is already printed onto the last physical page.
+      // Expand that same DOM surface, retaining it as the interactive archive.
+      changeGalleryPhase("expanding");
       return;
     }
     setPanelReady(true);
@@ -76,7 +112,8 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
     viewRef.current = target;
     setView(target);
     setPanelReady(false);
-    setGalleryCover(false);
+    changeGalleryPhase(target === "gallery" ? "preparing" : "hidden");
+    setGalleryPlacement(null);
     setScreenBounds(null);
     setTab("overview");
     if (target === "research" && window.location.hash !== "#research") window.history.pushState(null, "", "#research");
@@ -106,7 +143,7 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
   }
 
   useEffect(() => {
-    if (view === "desk") return;
+    if (view === "desk" || galleryActive) return;
     backRef.current?.focus({ preventScroll: true });
     const onKey = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") { closeDesk(); return; }
@@ -118,17 +155,24 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [view]);
+  }, [view, galleryActive]);
 
   useEffect(() => {
     if (view === "research" && panelReady) document.getElementById(`j-${tab}-tab`)?.focus({ preventScroll: true });
   }, [view, panelReady]);
 
   useEffect(() => {
-    const restore = (event: PageTransitionEvent) => { if (event.persisted) closeDesk(); };
+    homeTitle.current = document.title;
+    const restore = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      if (window.history.state?.journalGallery) restoreGallery();
+      else closeDesk();
+    };
     const historyChanged = () => {
-      if (window.location.hash === "#research") { if (viewRef.current === "desk") open("research"); }
-      else if (viewRef.current !== "desk") closeDesk();
+      if (window.history.state?.journalGallery) { restoreGallery(); return; }
+      const researchRequested = window.location.hash === "#research";
+      if (viewRef.current !== "desk") resetDesk();
+      if (researchRequested) open("research");
     };
     if (window.location.hash === "#research") open("research");
     window.addEventListener("pageshow", restore);
@@ -138,7 +182,7 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
 
   const screenStyle: CSSProperties | undefined = screenBounds ? { left: screenBounds.left, top: screenBounds.top, width: screenBounds.width, height: screenBounds.height } : undefined;
 
-  return <main className="journal-home j-single" id="top" data-view={view}>
+  return <><main className="journal-home j-single" id="top" data-view={view} data-archive-active={galleryActive} inert={galleryActive} aria-hidden={galleryActive}>
     <header className="j-header" inert={view !== "desk"} aria-hidden={view !== "desk"}>
       <a className="j-name" href="#top" onClick={(event) => { event.preventDefault(); closeDesk(); }} aria-label="Jiawei Guo, home">Jiawei Guo<span lang="zh-CN">郭家威</span></a>
       <nav aria-label="Primary navigation"><a href="#research" onClick={(event) => follow(event, "research")}>Research</a><a href={galleryHref} onClick={(event) => follow(event, "gallery")}>Gallery<Arrow /></a><a href={`mailto:${email}`}>Say hello<Arrow /></a></nav>
@@ -150,7 +194,7 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
         <h1 id="j-title"><span className="j-title-first">Jiawei</span><em className="j-title-second">Guo.</em></h1>
       </div>
       <div className="j-scene-canvas" ref={sceneRef}>
-        <DeskScene immersive focus={view} onSelect={open} onFocusSettled={settled} onScreenBounds={setScreenBounds} />
+        <DeskScene immersive focus={view} onSelect={open} onFocusSettled={settled} onScreenBounds={setScreenBounds} onGalleryPage={receiveGalleryPage} />
         <section id="research" ref={screenRef} className={`j-research-screen${screenBounds ? "" : " j-screen-fallback"}`} style={screenStyle} hidden={view !== "research" || !panelReady} aria-label="Research on Jiawei’s computer screen">
           <div className="j-screen-topbar"><span>J. GUO / RESEARCH</span><span>LEHIGH UNIVERSITY</span></div>
           <nav className="j-screen-tabs" role="tablist" aria-label="Research pages">
@@ -199,6 +243,5 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
       <FriesNote />
       <nav aria-label="Contact and links"><a href="/Jiawei_Guo_CV.pdf" target="_blank" rel="noreferrer">CV<Arrow /></a><a href={`mailto:${email}`}>Email<Arrow /></a><a href={studioHref}>Studio<Arrow /></a><span>© 2026</span></nav>
     </footer>
-    <div className="j-gallery-departure" data-visible={galleryCover} aria-hidden="true"><img src="/photos/0cd9ca70-1ea6-41f1-b301-9c0f15c629ce.jpg" alt="" /></div>
-  </main>;
+  </main><BookGallerySurface placement={galleryPlacement} phase={galleryPhase} onExpanded={completeGallery} /></>;
 }

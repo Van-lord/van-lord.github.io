@@ -2,7 +2,7 @@
 
 Single-screen personal workspace for research and photography. Published at https://van-lord.github.io/.
 
-Selecting the laptop opens Research, Papers, and About directly inside its projected display. Only the content within that screen scrolls; there are no page sections below the main composition. Selecting the photo album lifts the cover and turns its pages before entering Gallery.
+Selecting the laptop opens Research, Papers, and About directly inside its projected display. Only the content within that screen scrolls; there are no page sections below the main composition. Selecting the photo album turns through six distinct photographs. The last page contains the live Gallery and expands into the interactive archive without loading a new document.
 
 ## Build
 

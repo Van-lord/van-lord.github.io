@@ -25,6 +25,16 @@ for (const album of gallery) {
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
 
 try {
+  // Share one copy of the original archive rules between the real Gallery
+  // routes and the live Gallery page revealed inside the book. Generate it
+  // before the homepage build, whose book surface imports the same stylesheet.
+  // The checked-in file also supports native builds without a Pages build.
+  const preflightStyles = await readFile(path.join(projectRoot, "static-gallery", "preflight.css"), "utf8");
+  const galleryStyles = (await readFile(path.join(projectRoot, "app", "globals.css"), "utf8"))
+    .replace(/^@import\s+["']tailwindcss["'];\s*/, "")
+    .replace(/url\(["']\/neural-network-field\.webp["']\)/g, "none");
+  await writeFile(path.join(projectRoot, "public", "gallery-page.css"), `${preflightStyles}\n\n${galleryStyles}`);
+
   await build({ configFile, build: {
     ssr: path.join(projectRoot, "static-home", "entry-server.tsx"), outDir: ssrRoot, emptyOutDir: true,
     rollupOptions: { output: { entryFileNames: "entry-server.mjs" } },
@@ -37,12 +47,6 @@ try {
   if (!template.includes("<!--ssr-outlet-->")) throw new Error("Missing homepage SSR outlet.");
   await writeFile(indexPath, template.replace("<!--ssr-outlet-->", () => markup));
 
-  // The archive keeps the original Gallery CSS without requiring Tailwind's
-  // compiler. Every existing Gallery rule below that import is retained.
-  const galleryStyles = (await readFile(path.join(projectRoot, "app", "globals.css"), "utf8"))
-    .replace(/^@import\s+["']tailwindcss["'];\s*/, "")
-    .replace(/url\(["']\/neural-network-field\.webp["']\)/g, "none");
-  await writeFile(path.join(projectRoot, "static-gallery", "gallery.css"), galleryStyles);
   const gallerySsrRoot = path.join(ssrRoot, "gallery");
   await build({ configFile: galleryConfig, build: {
     ssr: path.join(projectRoot, "static-gallery", "entry-server.tsx"), outDir: gallerySsrRoot, emptyOutDir: true,

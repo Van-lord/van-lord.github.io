@@ -9,7 +9,7 @@ export const albums = gallery as Album[];
 const photoAlt = (photo: Photo, album: Album) => photo.altText || photo.alt || album.title;
 export const albumPath = (slug: string) => `/gallery/${slug}/`;
 
-function GalleryIndex() {
+export function GalleryIndex() {
   const totalFrames = albums.reduce((sum, album) => sum + album.photos.length, 0);
   return <main className="gallery-index-page">
     <header className="site-nav album-page-nav gallery-index-nav" aria-label="Gallery navigation">

@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import albumSequence from "../../data/album-sequence.json";
 
 type SceneTarget = "research" | "gallery";
 type SceneFocus = "desk" | "camera" | SceneTarget;
 export type ScreenBounds = { left: number; top: number; width: number; height: number };
+export type GalleryPagePlacement = { a: number; b: number; c: number; d: number; e: number; f: number };
 type DeskSceneProps = {
   className?: string;
   focus?: SceneFocus;
@@ -12,10 +14,11 @@ type DeskSceneProps = {
   onSelect?: (target: SceneTarget) => void;
   onFocusSettled?: (target: SceneTarget) => void;
   onScreenBounds?: (bounds: ScreenBounds | null) => void;
+  onGalleryPage?: (placement: GalleryPagePlacement | null) => void;
 };
 
 /** A physical workspace that becomes a close-up when a destination is selected. */
-export function DeskScene({ className = "", focus = "desk", immersive = false, onSelect, onFocusSettled, onScreenBounds }: DeskSceneProps) {
+export function DeskScene({ className = "", focus = "desk", immersive = false, onSelect, onFocusSettled, onScreenBounds, onGalleryPage }: DeskSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const focusRef = useRef(focus);
   const renderRequestRef = useRef<(() => void) | null>(null);
@@ -24,15 +27,18 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
   const selectRef = useRef(onSelect);
   const settledRef = useRef(onFocusSettled);
   const screenBoundsRef = useRef(onScreenBounds);
+  const galleryPageRef = useRef(onGalleryPage);
 
   useEffect(() => { selectRef.current = onSelect; }, [onSelect]);
   useEffect(() => { settledRef.current = onFocusSettled; }, [onFocusSettled]);
   useEffect(() => { screenBoundsRef.current = onScreenBounds; }, [onScreenBounds]);
+  useEffect(() => { galleryPageRef.current = onGalleryPage; }, [onGalleryPage]);
 
   useEffect(() => {
     focusRef.current = focus;
     setSettled(false);
     if (focus !== "research") screenBoundsRef.current?.(null);
+    if (focus !== "gallery" && focus !== "camera") galleryPageRef.current?.(null);
     renderRequestRef.current?.();
   }, [focus]);
 
@@ -296,16 +302,15 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
         texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
         return texture;
       };
-      const birdPhoto = loadPhoto("/photos/0cd9ca70-1ea6-41f1-b301-9c0f15c629ce.jpg");
-      const cityPhoto = loadPhoto("/photos/76fefc7c-7c0d-454d-8a6c-a3fb683cbf15.jpg");
-      const birdMaterial = new THREE.MeshBasicMaterial({ map: birdPhoto, toneMapped: false });
-      const cityMaterial = new THREE.MeshBasicMaterial({ map: cityPhoto, toneMapped: false });
+      // Each visible side of the cover and turning leaves has its own photo.
+      const photoMaterials = albumSequence.map(({ url }) => new THREE.MeshBasicMaterial({ map: loadPhoto(url), toneMapped: false }));
       const photoWidth = 1.4;
       const photoHeight = 0.93;
-      const galleryImage = new THREE.Mesh(new THREE.PlaneGeometry(photoWidth, photoHeight), birdMaterial);
-      galleryImage.rotation.x = -Math.PI / 2;
-      galleryImage.position.set(albumWidth / 2, 0.223, 0);
-      album.add(galleryImage);
+      // The last page is a live HTML Gallery, projected onto this dark surface.
+      const galleryPage = new THREE.Mesh(new THREE.PlaneGeometry(photoWidth, photoHeight), new THREE.MeshBasicMaterial({ color: 0x080909, toneMapped: false }));
+      galleryPage.rotation.x = -Math.PI / 2;
+      galleryPage.position.set(albumWidth / 2, 0.223, 0);
+      album.add(galleryPage);
 
       // The cover really turns around the cloth spine. Its offset from the
       // hinge lets it settle beside the paper block rather than above it.
@@ -314,7 +319,7 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
       album.add(coverHinge);
       box(albumWidth + 0.06, 0.052, albumDepth + 0.055, albumCover, albumWidth / 2, 0.105, 0, coverHinge);
       box(0.09, 0.056, albumDepth + 0.06, red, 0.015, 0.105, 0, coverHinge);
-      const coverPhoto = new THREE.Mesh(new THREE.PlaneGeometry(photoWidth, photoHeight), birdMaterial);
+      const coverPhoto = new THREE.Mesh(new THREE.PlaneGeometry(photoWidth, photoHeight), photoMaterials[0]);
       coverPhoto.rotation.x = -Math.PI / 2;
       coverPhoto.position.set(albumWidth / 2 + 0.02, 0.133, -0.05);
       coverHinge.add(coverPhoto);
@@ -334,7 +339,7 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
         title.position.set(albumWidth / 2 + 0.02, 0.134, 0.52);
         coverHinge.add(title);
       }
-      const insideCover = new THREE.Mesh(new THREE.PlaneGeometry(photoWidth, photoHeight), cityMaterial);
+      const insideCover = new THREE.Mesh(new THREE.PlaneGeometry(photoWidth, photoHeight), photoMaterials[1]);
       insideCover.rotation.set(Math.PI / 2, 0, Math.PI);
       insideCover.position.set(albumWidth / 2, 0.076, 0);
       coverHinge.add(insideCover);
@@ -363,8 +368,8 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
           hinge.add(surface);
         };
         addSurface(albumWidth - 0.05, albumDepth - 0.045, 0, albumPaper);
-        addSurface(photoWidth, photoHeight, 0.003, index === 0 ? birdMaterial : cityMaterial);
-        addSurface(photoWidth, photoHeight, -0.003, cityMaterial, true);
+        addSurface(photoWidth, photoHeight, 0.003, photoMaterials[2 + index * 2]);
+        addSurface(photoWidth, photoHeight, -0.003, photoMaterials[3 + index * 2], true);
         leaves.push({ hinge, surfaces });
       }
       function turnLeaf(leaf: AlbumLeaf, angle: number) {
@@ -386,14 +391,11 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
       album.add(albumOverview);
       const overviewPosition = new THREE.Vector3();
       const overviewQuaternion = new THREE.Quaternion();
-      const photoPosition = new THREE.Vector3();
-      const photoQuaternion = new THREE.Quaternion();
       const smooth = (value: number) => {
         const clamped = Math.max(0, Math.min(1, value));
         return clamped * clamped * (3 - 2 * clamped);
       };
-      const galleryDuration = 3200;
-      let galleryPush = 0;
+      const galleryDuration = 2650;
       let galleryApproach = 0;
       let startAlbumY = albumRestY;
       let startCoverAngle = 0;
@@ -425,6 +427,7 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
       const focusUp = new THREE.Vector3();
       const worldQuaternion = new THREE.Quaternion();
       let reportedScreenBounds: ScreenBounds | null = null;
+      let reportedGalleryPage: GalleryPagePlacement | null = null;
       const screenCorners = [
         new THREE.Vector3(-1.61, -1.01, 0), new THREE.Vector3(1.61, -1.01, 0),
         new THREE.Vector3(1.61, 1.01, 0), new THREE.Vector3(-1.61, 1.01, 0),
@@ -455,6 +458,39 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
         }
       }
 
+      function reportGalleryPage(target: "desk" | SceneTarget) {
+        const uncovered = target === "gallery" && leaves[leaves.length - 1].hinge.rotation.z >= Math.PI / 2;
+        if (!uncovered || !host) {
+          if (reportedGalleryPage) { reportedGalleryPage = null; galleryPageRef.current?.(null); }
+          return;
+        }
+        const rect = host.getBoundingClientRect();
+        const project = (x: number, y: number) => {
+          projectedCorner.set(x, y, 0).applyMatrix4(galleryPage.matrixWorld).project(camera);
+          return {
+            x: rect.left + (projectedCorner.x + 1) * rect.width / 2,
+            y: rect.top + (1 - projectedCorner.y) * rect.height / 2,
+          };
+        };
+        const topLeft = project(-photoWidth / 2, photoHeight / 2);
+        const topRight = project(photoWidth / 2, photoHeight / 2);
+        const bottomLeft = project(-photoWidth / 2, -photoHeight / 2);
+        const width = Math.max(1, window.innerWidth), height = Math.max(1, window.innerHeight);
+        const placement = {
+          a: (topRight.x - topLeft.x) / width,
+          b: (topRight.y - topLeft.y) / width,
+          c: (bottomLeft.x - topLeft.x) / height,
+          d: (bottomLeft.y - topLeft.y) / height,
+          e: topLeft.x,
+          f: topLeft.y,
+        };
+        const scale = { a: width, b: width, c: height, d: height, e: 1, f: 1 };
+        if (!reportedGalleryPage || (Object.keys(placement) as Array<keyof GalleryPagePlacement>).some((key) => Math.abs(placement[key] - reportedGalleryPage![key]) * scale[key] > 0.5)) {
+          reportedGalleryPage = placement;
+          galleryPageRef.current?.(placement);
+        }
+      }
+
       function canonicalFocus(): "desk" | SceneTarget {
         return focusRef.current === "camera" ? "gallery" : focusRef.current;
       }
@@ -466,8 +502,8 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
           // actual screen; the HTML research interface is projected into it.
           return Math.min(viewHeight * 0.72 / (2.02 * lid.scale.y), viewHeight * viewAspect * 0.83 / 3.22);
         }
-        // The last frame is a photograph, edge-to-edge, before the gallery opens.
-        return Math.max(viewHeight * 1.025 / photoHeight, viewHeight * viewAspect * 1.025 / photoWidth);
+        // Keep the open book framed while its live Gallery page expands in HTML.
+        return Math.min(viewHeight * 0.74 / 2.6, viewHeight * viewAspect * 0.88 / (albumWidth * 2 + 0.28));
       }
 
       function researchLidScale(target: "desk" | SceneTarget) {
@@ -484,15 +520,13 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
           return;
         }
         scene.updateMatrixWorld(true);
-        const focalMesh = target === "research" ? laptopScreen : galleryImage;
+        const focalMesh = target === "research" ? laptopScreen : galleryPage;
         if (!focalMesh) return;
         if (target === "gallery") {
           albumOverview.getWorldPosition(overviewPosition);
           albumOverview.getWorldQuaternion(overviewQuaternion);
-          galleryImage.getWorldPosition(photoPosition);
-          galleryImage.getWorldQuaternion(photoQuaternion);
-          focusCenter.lerpVectors(overviewPosition, photoPosition, galleryPush);
-          worldQuaternion.slerpQuaternions(overviewQuaternion, photoQuaternion, galleryPush);
+          focusCenter.copy(overviewPosition);
+          worldQuaternion.copy(overviewQuaternion);
         } else {
           focalMesh.getWorldPosition(focusCenter);
           focalMesh.getWorldQuaternion(worldQuaternion);
@@ -535,26 +569,22 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
         if (focusView === "gallery") {
           const elapsed = progress * galleryDuration;
           galleryApproach = smooth(elapsed / 850);
-          galleryPush = smooth((elapsed - 2100) / 1100);
           album.position.y = startAlbumY + (1.45 - startAlbumY) * galleryApproach;
           coverHinge.rotation.z = startCoverAngle + (Math.PI - startCoverAngle) * smooth((elapsed - 650) / 900);
           leaves.forEach((leaf, index) => turnLeaf(leaf, startLeafAngles[index] + (Math.PI - startLeafAngles[index]) * smooth((elapsed - 1050 - index * 250) / 850)));
-          galleryPhase(elapsed < 650 ? "approaching" : elapsed < 2100 ? "opening" : elapsed < galleryDuration ? "entering" : "open");
+          galleryPhase(elapsed < 650 ? "approaching" : leaves[leaves.length - 1].hinge.rotation.z < Math.PI / 2 ? "opening" : elapsed < galleryDuration ? "gallery-page" : "open");
         } else {
           album.position.y = startAlbumY + (albumRestY - startAlbumY) * eased;
           coverHinge.rotation.z = startCoverAngle * (1 - eased);
           leaves.forEach((leaf, index) => turnLeaf(leaf, startLeafAngles[index] * (1 - eased)));
           galleryPhase(progress < 1 && startCoverAngle > 0 ? "closing" : "closed");
-          galleryPush = 0;
         }
         const targetLidScale = researchLidScale(focusView);
         lid.scale.y = transitionActive ? startLidScale + (targetLidScale - startLidScale) * eased : targetLidScale;
         // The focus point follows the screen's changing center during the
         // portrait morph, while its normal stays perpendicular to the camera.
         updateDestination(focusView);
-        const finalZoom = closeupZoom(focusView);
-        const overviewZoom = Math.min(viewHeight * 0.74 / 2.6, viewHeight * viewAspect * 0.88 / (albumWidth * 2 + 0.28));
-        const targetZoom = focusView === "gallery" ? overviewZoom * (finalZoom / overviewZoom) ** galleryPush : finalZoom;
+        const targetZoom = closeupZoom(focusView);
         if (transitionActive) {
           const cameraProgress = focusView === "gallery" ? galleryApproach : eased;
           camera.quaternion.slerpQuaternions(startQuaternion, destinationQuaternion, cameraProgress);
@@ -588,6 +618,7 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
         camera.updateMatrixWorld();
         renderer.render(scene, camera);
         reportScreenBounds(focusView);
+        reportGalleryPage(focusView);
 
         if (!transitionActive && !settledNotified) {
           settledNotified = true;
@@ -642,8 +673,8 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
         scene.updateMatrixWorld(true);
         camera.updateMatrixWorld();
         raycaster.setFromCamera(hitPoint, camera);
-        if (galleryImage) {
-          galleryImage.getWorldPosition(photoHitTarget.position);
+        if (galleryPage) {
+          galleryPage.getWorldPosition(photoHitTarget.position);
           photoHitTarget.quaternion.copy(camera.quaternion);
           const minimumPixels = coarsePointer.matches || event.pointerType === "touch" ? 72 : 64;
           const side = viewHeight / camera.zoom * minimumPixels / rect.height;
@@ -721,6 +752,7 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
 
       teardown = () => {
         screenBoundsRef.current?.(null);
+        galleryPageRef.current?.(null);
         if (renderRequestRef.current === requestRender) renderRequestRef.current = null;
         if (frame) cancelAnimationFrame(frame);
         resizeObserver.disconnect();
@@ -760,7 +792,7 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
   }, []);
 
   return (
-    <div className={`paper-desk ${className}`.trim()} ref={hostRef} role="img" aria-label="A small workspace with a laptop, camera, field notebook and a photo album" data-focus={focus === "camera" ? "gallery" : focus} data-ready={ready} data-settled={settled} style={{ position: "relative", width: "100%", height: immersive ? "100%" : undefined, aspectRatio: immersive ? undefined : "1.2" }}>
+    <div className={`paper-desk ${className}`.trim()} ref={hostRef} role="img" aria-label="A small workspace with a laptop, camera, field notebook and a photo album" data-focus={focus === "camera" ? "gallery" : focus} data-ready={ready} data-settled={settled} data-album-photos={JSON.stringify(albumSequence.map(({ url }) => url))} style={{ position: "relative", width: "100%", height: immersive ? "100%" : undefined, aspectRatio: immersive ? undefined : "1.2" }}>
       <img src="/desk-scene-fallback.svg" alt="" aria-hidden="true" width="720" height="600" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", visibility: ready ? "hidden" : "visible" }} />
     </div>
   );

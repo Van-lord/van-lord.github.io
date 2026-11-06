@@ -1,0 +1,50 @@
+.book-gallery-surface {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  scrollbar-gutter: stable;
+  visibility: hidden;
+  isolation: isolate;
+  pointer-events: none;
+  background: #080909;
+  color: #f1f0eb;
+  color-scheme: dark;
+  transform-origin: 0 0;
+  contain: layout style;
+  box-shadow: 0 0 0 1px rgb(8 9 9 / 40%);
+}
+
+.book-gallery-surface[data-visible="true"] {
+  visibility: visible;
+}
+
+.book-gallery-surface[data-phase="page"],
+.book-gallery-surface[data-phase="expanding"] {
+  will-change: transform;
+}
+
+.book-gallery-surface[data-expanding="true"] {
+  transition: transform 1000ms cubic-bezier(.22, .72, .2, 1), box-shadow 1000ms ease;
+  box-shadow: 0 0 0 0 transparent;
+}
+
+.book-gallery-surface[data-phase="active"] {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  box-shadow: none;
+}
+
+.book-gallery-surface #gallery-index-title:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-gallery-surface[data-expanding="true"] {
+    transition: none;
+  }
+}
