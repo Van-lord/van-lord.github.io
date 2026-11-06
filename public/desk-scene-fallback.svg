@@ -15,10 +15,15 @@
   <path d="m122 424 103 50 102-29v17l-102 37-103-54z" fill="#e4ddc8"/>
   <path d="m122 441 103 49 102-32v8l-102 37-103-53z" fill="#9b4f37"/>
   <g fill="#f1e7d4" font-family="Georgia,serif"><text x="168" y="427" font-size="15" transform="rotate(25 168 427)">Field notes</text></g>
-  <path d="m329 451 75-20 71 39-76 22z" fill="#e5dfcf"/>
-  <path d="m330 448 77-16 64 40-77 18z" fill="#f5efdf"/>
-  <path d="m343 448 62-12 48 30-62 13z" fill="#9aaea6"/>
-  <path d="m345 450 14-7 36 18 14-11 43 16-62 13z" fill="#576f6a"/>
+  <path d="m306 448 87-26 85 49v12l-91 30-81-51z" fill="#536149"/>
+  <path d="m309 444 84-25 82 48v10l-88 29-78-49z" fill="#ded8c7"/>
+  <path d="m315 453 72 46 85-28m-156-13 71 45 85-28" stroke="#c4bfac" stroke-width="1"/>
+  <path d="m306 440 87-26 85 49-91 30z" fill="#eee7d6"/>
+  <path d="m306 440 11-3 81 50-11 6z" fill="#536149"/>
+  <path d="m328 442 63-18 66 38-66 22z" fill="#6e929e"/>
+  <path d="m329 444 17-5 45 29 23-18 41 13-64 21z" fill="#4c665d"/>
+  <path d="m356 442 6 1 4-4m26 8 6 1 4-4" stroke="#2e433d" stroke-width="1.4"/>
+  <text x="335" y="470" font-family="Georgia,serif" font-size="8" fill="#536149" transform="rotate(31 335 470)">PHOTO ALBUM</text>
   <path d="m476 366 95 33v83l-96-32z" fill="#2f3430"/>
   <path d="m476 366 44-25 95 32-44 26z" fill="#cccdc2"/>
   <path d="m571 399 44-26v83l-44 26z" fill="#737a70"/>

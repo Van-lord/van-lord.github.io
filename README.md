@@ -2,7 +2,7 @@
 
 Single-screen personal workspace for research and photography. Published at https://van-lord.github.io/.
 
-Selecting the laptop opens Research, Papers, and About directly inside its projected display. Only the content within that screen scrolls; there are no page sections below the main composition. Selecting the camera or photographs opens the unchanged live Gallery.
+Selecting the laptop opens Research, Papers, and About directly inside its projected display. Only the content within that screen scrolls; there are no page sections below the main composition. Selecting the photo album lifts the cover and turns its pages before entering Gallery.
 
 ## Build
 
@@ -20,7 +20,7 @@ Edit `app/components/JournalHome.tsx` for the homepage, `public/journal.css` for
 
 ## Photography archive
 
-The homepage links to the existing live [Gallery](https://jiawei-guo-vision.jiaweiguonice.chatgpt.site/gallery). Its design, fluid effects, albums and Studio updates remain unchanged on the original host.
+The [Gallery](https://van-lord.github.io/gallery/) and all seven photo stories are published here, including their original styles, fluid introductions and full-screen viewer. Update `data/gallery.json` and `public/photos/` to publish photo changes. Studio remains on the original host; its later changes must be exported and published to Pages.
 
 ## Assets
 

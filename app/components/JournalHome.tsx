@@ -81,7 +81,7 @@ export function JournalHome({ email, linkedInUrl, scholarUrl, publications, gall
     setTab("overview");
     if (target === "research" && window.location.hash !== "#research") window.history.pushState(null, "", "#research");
     // The readable screen remains available when WebGL cannot initialize.
-    safetyTimer.current = window.setTimeout(() => settled(target), 2700);
+    safetyTimer.current = window.setTimeout(() => settled(target), target === "gallery" ? 5500 : 2700);
   }
 
   function follow(event: MouseEvent<HTMLAnchorElement>, target: "research" | "gallery") {

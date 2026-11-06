@@ -8,7 +8,7 @@ const errors = [];
 const htmlCache = new Map();
 const origin = 'https://pages-validation.invalid';
 const publishedOrigin = 'https://van-lord.github.io';
-const galleryUrl = 'https://jiawei-guo-vision.jiaweiguonice.chatgpt.site/gallery';
+const galleryUrl = '/gallery/';
 let checkedReferences = 0;
 
 function assert(condition, message) {
@@ -141,9 +141,30 @@ const homepageTags = tags(homepage);
 assert(!homepage.includes('<!--ssr-outlet-->'), 'Homepage was not server rendered');
 assert(homepageTags.some(({ name }) => name === 'h1'), 'Homepage has no rendered primary heading');
 assert(homepageTags.some(({ name, attrs }) => name === 'a' && attrs.href === galleryUrl),
-  'Homepage must link to the unchanged gallery on its existing host');
-assert(!htmlFiles.some((file) => path.relative(siteRoot, file).startsWith('gallery' + path.sep)),
-  'Gallery must stay on its existing host, not be replaced by exported pages');
+  'Homepage must link to the local GitHub Pages Gallery');
+const galleryDataText = await readFile(path.join(projectRoot, 'data', 'gallery.json'), 'utf8');
+const galleryAlbums = JSON.parse(galleryDataText);
+const galleryPhotos = galleryAlbums.flatMap((album) => album.photos);
+assert(galleryAlbums.length > 0 && galleryPhotos.length > 0, 'Published Gallery snapshot must not be empty');
+assert(!/\"(?:ownerEmail|storageKey|createdAt|updatedAt|published)\"\s*:/.test(galleryDataText), 'Gallery snapshot contains private storage or account fields');
+assert(new Set(galleryPhotos.map((photo) => photo.id)).size === galleryPhotos.length, 'Gallery photographs must not be duplicated or omitted');
+const archiveFile = path.join(siteRoot, 'gallery', 'index.html');
+assert(htmlFiles.includes(archiveFile), 'Missing local Gallery index');
+const archiveHtml = await htmlAt(archiveFile);
+for (const album of galleryAlbums) {
+  const albumFile = path.join(siteRoot, 'gallery', album.slug, 'index.html');
+  assert(htmlFiles.includes(albumFile), `Missing photo story: ${album.slug}`);
+  const albumHtml = await htmlAt(albumFile);
+  assert(decodeEntities(albumHtml).includes(album.title), `Missing story title: ${album.title}`);
+  assert(archiveHtml.includes(`/gallery/${album.slug}/`), `Story absent from Gallery index: ${album.slug}`);
+  for (const photo of album.photos) {
+    assert(/^\/photos\/[a-zA-Z0-9-]+\.jpg$/.test(photo.url), `Photo does not use a local asset: ${photo.url}`);
+    assert(albumHtml.includes(`src=\"${photo.url}\"`), `Photo absent from story: ${photo.id}`);
+    const bytes = await readFile(path.join(siteRoot, photo.url));
+    assert(bytes[0] === 0xff && bytes[1] === 0xd8, `Invalid JPEG for photograph: ${photo.id}`);
+  }
+}
+assert(htmlFiles.length === galleryAlbums.length + 3, 'Output must contain home, Gallery, every story, and404 only');
 const { publications } = JSON.parse(await readFile(path.join(projectRoot, 'data', 'portfolio.json'), 'utf8'));
 const visibleContent = decodeEntities(homepage.replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ');
 assert(publications.length > 0, 'Publication data is empty');
@@ -176,4 +197,4 @@ if (errors.length) {
   for (const error of errors) console.error(`FAIL ${error}`);
   throw new Error(`Pages validation failed with ${errors.length} error(s).`);
 }
-console.log(`Pages validation passed: ${htmlFiles.length} HTML pages, ${publications.length} publications, unchanged external gallery, ${checkedReferences} local references.`);
+console.log(`Pages validation passed: ${htmlFiles.length} HTML pages, ${publications.length} publications, ${galleryAlbums.length} local albums, ${galleryPhotos.length} photographs, ${checkedReferences} local references.`);

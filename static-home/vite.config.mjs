@@ -2,8 +2,8 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// This standalone build includes only the public homepage. The original
-// gallery and its management tools continue running on their existing host.
+// Build the public homepage; build-pages.mjs adds the static photographic archive.
+// Management tools remain separate from the public GitHub Pages output.
 export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),
   publicDir: false,

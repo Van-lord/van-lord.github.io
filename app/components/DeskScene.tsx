@@ -272,27 +272,136 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
       let scrollProgress = 0;
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
       const loader = new THREE.TextureLoader();
-      const printGroups: InstanceType<typeof THREE.Group>[] = [];
-      let galleryImage: InstanceType<typeof THREE.Mesh> | undefined;
-      function print(url: string, x: number, z: number, angle: number, elevation: number) {
-        const group = new THREE.Group();
-        group.position.set(x, elevation, z);
-        group.rotation.y = angle;
-        objects.add(group);
-        box(1.32, 0.024, 1.08, paper, 0, 0.013, 0, group);
+      const albumWidth = 1.68;
+      const albumDepth = 1.24;
+      const album = new THREE.Group();
+      album.position.set(-0.68, 0.035, 1.85);
+      album.rotation.y = 0.13;
+      objects.add(album);
+      const albumRestY = album.position.y;
+      const albumCloth = new THREE.MeshStandardMaterial({ color: 0x67705a, roughness: 0.96 });
+      const albumCover = new THREE.MeshStandardMaterial({ color: 0xe9e1ce, roughness: 0.94 });
+      const albumPaper = new THREE.MeshStandardMaterial({ color: 0xf7f0df, roughness: 1, side: THREE.DoubleSide });
+      box(albumWidth + 0.06, 0.045, albumDepth + 0.055, albumCloth, albumWidth / 2, 0.025, 0, album);
+      box(albumWidth - 0.035, 0.17, albumDepth - 0.035, albumPaper, albumWidth / 2 + 0.015, 0.135, 0, album);
+      const spine = cylinder(0.075, albumDepth + 0.035, red, 0, 0.14, 0, album);
+      spine.rotation.x = Math.PI / 2;
+      for (let index = 0; index < 8; index++) {
+        box(albumWidth - 0.07, 0.004, 0.003, albumCover, albumWidth / 2 + 0.02, 0.065 + index * 0.019, albumDepth / 2 - 0.014, album);
+      }
+      const loadPhoto = (url: string) => {
         const texture = loader.load(url, () => { if (!cancelled) requestRender(); }, undefined, () => undefined);
         textures.add(texture);
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
-        const image = new THREE.Mesh(new THREE.PlaneGeometry(1.16, 0.77), new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }));
-        image.rotation.x = -Math.PI / 2;
-        image.position.set(0, 0.027, -0.055);
-        group.add(image);
-        printGroups.push(group);
-        galleryImage = image;
+        return texture;
+      };
+      const birdPhoto = loadPhoto("/photos/0cd9ca70-1ea6-41f1-b301-9c0f15c629ce.jpg");
+      const cityPhoto = loadPhoto("/photos/76fefc7c-7c0d-454d-8a6c-a3fb683cbf15.jpg");
+      const birdMaterial = new THREE.MeshBasicMaterial({ map: birdPhoto, toneMapped: false });
+      const cityMaterial = new THREE.MeshBasicMaterial({ map: cityPhoto, toneMapped: false });
+      const photoWidth = 1.4;
+      const photoHeight = 0.93;
+      const galleryImage = new THREE.Mesh(new THREE.PlaneGeometry(photoWidth, photoHeight), birdMaterial);
+      galleryImage.rotation.x = -Math.PI / 2;
+      galleryImage.position.set(albumWidth / 2, 0.223, 0);
+      album.add(galleryImage);
+
+      // The cover really turns around the cloth spine. Its offset from the
+      // hinge lets it settle beside the paper block rather than above it.
+      const coverHinge = new THREE.Group();
+      coverHinge.position.set(0, 0.14, 0);
+      album.add(coverHinge);
+      box(albumWidth + 0.06, 0.052, albumDepth + 0.055, albumCover, albumWidth / 2, 0.105, 0, coverHinge);
+      box(0.09, 0.056, albumDepth + 0.06, red, 0.015, 0.105, 0, coverHinge);
+      const coverPhoto = new THREE.Mesh(new THREE.PlaneGeometry(photoWidth, photoHeight), birdMaterial);
+      coverPhoto.rotation.x = -Math.PI / 2;
+      coverPhoto.position.set(albumWidth / 2 + 0.02, 0.133, -0.05);
+      coverHinge.add(coverPhoto);
+      const coverTitleTexture = canvasTexture(1024, 120, (context) => {
+        context.fillStyle = "#e9e1ce";
+        context.fillRect(0, 0, 1024, 120);
+        context.fillStyle = "#46513b";
+        context.font = "54px Georgia, serif";
+        context.fillText("Photographs", 18, 65);
+        context.font = "22px monospace";
+        context.textAlign = "right";
+        context.fillText("J. GUO", 1000, 65);
+      });
+      if (coverTitleTexture) {
+        const title = new THREE.Mesh(new THREE.PlaneGeometry(1.43, 0.17), new THREE.MeshBasicMaterial({ map: coverTitleTexture, toneMapped: false }));
+        title.rotation.x = -Math.PI / 2;
+        title.position.set(albumWidth / 2 + 0.02, 0.134, 0.52);
+        coverHinge.add(title);
       }
-      print("/photos/76fefc7c-7c0d-454d-8a6c-a3fb683cbf15.jpg", -0.03, 1.47, -0.08, 0.01);
-      print("/photos/0cd9ca70-1ea6-41f1-b301-9c0f15c629ce.jpg", 0.04, 1.67, 0.13, 0.046);
+      const insideCover = new THREE.Mesh(new THREE.PlaneGeometry(photoWidth, photoHeight), cityMaterial);
+      insideCover.rotation.set(Math.PI / 2, 0, Math.PI);
+      insideCover.position.set(albumWidth / 2, 0.076, 0);
+      coverHinge.add(insideCover);
+
+      type AlbumLeaf = {
+        hinge: InstanceType<typeof THREE.Group>;
+        surfaces: Array<{ geometry: InstanceType<typeof THREE.PlaneGeometry>; restingY: number[] }>;
+      };
+      const leaves: AlbumLeaf[] = [];
+      for (let index = 0; index < 2; index++) {
+        const hinge = new THREE.Group();
+        hinge.position.set(0.025, 0.239 - index * 0.007, 0);
+        album.add(hinge);
+        const surfaces: AlbumLeaf["surfaces"] = [];
+        const addSurface = (width: number, depth: number, offsetY: number, material: InstanceType<typeof THREE.Material>, reverse = false) => {
+          const geometry = new THREE.PlaneGeometry(width, depth, 24, 1);
+          if (reverse) { geometry.rotateZ(Math.PI); geometry.rotateX(Math.PI / 2); }
+          else geometry.rotateX(-Math.PI / 2);
+          geometry.translate((albumWidth - 0.05) / 2, offsetY, 0);
+          const positions = geometry.getAttribute("position");
+          const restingY = Array.from({ length: positions.count }, (_, vertex) => positions.getY(vertex));
+          surfaces.push({ geometry, restingY });
+          const surface = new THREE.Mesh(geometry, material);
+          surface.castShadow = true;
+          surface.receiveShadow = true;
+          hinge.add(surface);
+        };
+        addSurface(albumWidth - 0.05, albumDepth - 0.045, 0, albumPaper);
+        addSurface(photoWidth, photoHeight, 0.003, index === 0 ? birdMaterial : cityMaterial);
+        addSurface(photoWidth, photoHeight, -0.003, cityMaterial, true);
+        leaves.push({ hinge, surfaces });
+      }
+      function turnLeaf(leaf: AlbumLeaf, angle: number) {
+        leaf.hinge.rotation.z = angle;
+        const curl = Math.sin(angle) * 0.16;
+        for (const surface of leaf.surfaces) {
+          const positions = surface.geometry.getAttribute("position");
+          for (let vertex = 0; vertex < positions.count; vertex++) {
+            const along = positions.getX(vertex) / (albumWidth - 0.05);
+            positions.setY(vertex, surface.restingY[vertex] + Math.sin(along * Math.PI) * curl);
+          }
+          positions.needsUpdate = true;
+          surface.geometry.computeVertexNormals();
+        }
+      }
+      const albumOverview = new THREE.Object3D();
+      albumOverview.position.set(0, 0.22, 0);
+      albumOverview.rotation.x = -Math.PI / 2 + 0.28;
+      album.add(albumOverview);
+      const overviewPosition = new THREE.Vector3();
+      const overviewQuaternion = new THREE.Quaternion();
+      const photoPosition = new THREE.Vector3();
+      const photoQuaternion = new THREE.Quaternion();
+      const smooth = (value: number) => {
+        const clamped = Math.max(0, Math.min(1, value));
+        return clamped * clamped * (3 - 2 * clamped);
+      };
+      const galleryDuration = 3200;
+      let galleryPush = 0;
+      let galleryApproach = 0;
+      let startAlbumY = albumRestY;
+      let startCoverAngle = 0;
+      let startLeafAngles = [0, 0];
+      function galleryPhase(value: string) {
+        if (host && host.dataset.galleryPhase !== value) host.dataset.galleryPhase = value;
+      }
+      galleryPhase("closed");
 
       const transitionDuration = 1150;
       let lastFocus: "desk" | SceneTarget = "desk";
@@ -358,7 +467,7 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
           return Math.min(viewHeight * 0.72 / (2.02 * lid.scale.y), viewHeight * viewAspect * 0.83 / 3.22);
         }
         // The last frame is a photograph, edge-to-edge, before the gallery opens.
-        return Math.max(viewHeight * 1.025 / 0.77, viewHeight * viewAspect * 1.025 / 1.16);
+        return Math.max(viewHeight * 1.025 / photoHeight, viewHeight * viewAspect * 1.025 / photoWidth);
       }
 
       function researchLidScale(target: "desk" | SceneTarget) {
@@ -377,8 +486,17 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
         scene.updateMatrixWorld(true);
         const focalMesh = target === "research" ? laptopScreen : galleryImage;
         if (!focalMesh) return;
-        focalMesh.getWorldPosition(focusCenter);
-        focalMesh.getWorldQuaternion(worldQuaternion);
+        if (target === "gallery") {
+          albumOverview.getWorldPosition(overviewPosition);
+          albumOverview.getWorldQuaternion(overviewQuaternion);
+          galleryImage.getWorldPosition(photoPosition);
+          galleryImage.getWorldQuaternion(photoQuaternion);
+          focusCenter.lerpVectors(overviewPosition, photoPosition, galleryPush);
+          worldQuaternion.slerpQuaternions(overviewQuaternion, photoQuaternion, galleryPush);
+        } else {
+          focalMesh.getWorldPosition(focusCenter);
+          focalMesh.getWorldQuaternion(worldQuaternion);
+        }
         focusNormal.set(0, 0, 1).applyQuaternion(worldQuaternion).normalize();
         focusUp.set(0, 1, 0).applyQuaternion(worldQuaternion).normalize();
         destinationPosition.copy(focusCenter).addScaledVector(focusNormal, 12);
@@ -400,6 +518,9 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
           startOrbitDistance = orbitDistance;
           startZoom = camera.zoom;
           startLidScale = lid.scale.y;
+          startAlbumY = album.position.y;
+          startCoverAngle = coverHinge.rotation.z;
+          startLeafAngles = leaves.map((leaf) => leaf.hinge.rotation.z);
           transitionStarted = now;
           transitionActive = true;
           settledNotified = false;
@@ -407,24 +528,42 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
           updateDestination(focusView);
         }
 
-        const rawProgress = transitionActive ? Math.min(1, (now - transitionStarted) / transitionDuration) : 1;
+        const duration = focusView === "gallery" ? galleryDuration : transitionDuration;
+        const rawProgress = transitionActive ? Math.min(1, (now - transitionStarted) / duration) : 1;
         const progress = reducedMotion.matches ? 1 : rawProgress;
         const eased = progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
+        if (focusView === "gallery") {
+          const elapsed = progress * galleryDuration;
+          galleryApproach = smooth(elapsed / 850);
+          galleryPush = smooth((elapsed - 2100) / 1100);
+          album.position.y = startAlbumY + (1.45 - startAlbumY) * galleryApproach;
+          coverHinge.rotation.z = startCoverAngle + (Math.PI - startCoverAngle) * smooth((elapsed - 650) / 900);
+          leaves.forEach((leaf, index) => turnLeaf(leaf, startLeafAngles[index] + (Math.PI - startLeafAngles[index]) * smooth((elapsed - 1050 - index * 250) / 850)));
+          galleryPhase(elapsed < 650 ? "approaching" : elapsed < 2100 ? "opening" : elapsed < galleryDuration ? "entering" : "open");
+        } else {
+          album.position.y = startAlbumY + (albumRestY - startAlbumY) * eased;
+          coverHinge.rotation.z = startCoverAngle * (1 - eased);
+          leaves.forEach((leaf, index) => turnLeaf(leaf, startLeafAngles[index] * (1 - eased)));
+          galleryPhase(progress < 1 && startCoverAngle > 0 ? "closing" : "closed");
+          galleryPush = 0;
+        }
         const targetLidScale = researchLidScale(focusView);
         lid.scale.y = transitionActive ? startLidScale + (targetLidScale - startLidScale) * eased : targetLidScale;
         // The focus point follows the screen's changing center during the
         // portrait morph, while its normal stays perpendicular to the camera.
         updateDestination(focusView);
-        const targetZoom = closeupZoom(focusView);
+        const finalZoom = closeupZoom(focusView);
+        const overviewZoom = Math.min(viewHeight * 0.74 / 2.6, viewHeight * viewAspect * 0.88 / (albumWidth * 2 + 0.28));
+        const targetZoom = focusView === "gallery" ? overviewZoom * (finalZoom / overviewZoom) ** galleryPush : finalZoom;
         if (transitionActive) {
-          camera.quaternion.slerpQuaternions(startQuaternion, destinationQuaternion, eased);
-          const centerProgress = focusView === "gallery" ? 1 - (1 - eased) ** 2 : eased;
-          orbitCenter.lerpVectors(startCenter, focusView === "desk" ? baseCenter : focusCenter, centerProgress);
-          orbitDistance = startOrbitDistance + ((focusView === "desk" ? basePosition.distanceTo(baseCenter) : 12) - startOrbitDistance) * eased;
+          const cameraProgress = focusView === "gallery" ? galleryApproach : eased;
+          camera.quaternion.slerpQuaternions(startQuaternion, destinationQuaternion, cameraProgress);
+          orbitCenter.lerpVectors(startCenter, focusView === "desk" ? baseCenter : focusCenter, cameraProgress);
+          orbitDistance = startOrbitDistance + ((focusView === "desk" ? basePosition.distanceTo(baseCenter) : 12) - startOrbitDistance) * cameraProgress;
           orbitNormal.set(0, 0, 1).applyQuaternion(camera.quaternion);
           camera.position.copy(orbitCenter).addScaledVector(orbitNormal, orbitDistance);
           camera.zoom = focusView === "gallery"
-            ? startZoom * (targetZoom / startZoom) ** eased
+            ? startZoom * (targetZoom / startZoom) ** galleryApproach
             : startZoom + (targetZoom - startZoom) * eased;
           if (progress === 1) transitionActive = false;
         } else {
@@ -480,8 +619,8 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
       }
       const raycaster = new THREE.Raycaster();
       const hitPoint = new THREE.Vector2();
-      // A camera-facing picking surface gives the thin, flat print a usable
-      // touch area without enlarging the photograph or changing its close-up.
+      // A camera-facing picking surface keeps the album easy to select on
+      // touch screens without changing its physical size on the desk.
       const photoHitTarget = new THREE.Mesh(
         new THREE.PlaneGeometry(1, 1),
         new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide }),
@@ -491,7 +630,7 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
       const coarsePointer = window.matchMedia("(pointer: coarse)");
       const targets = new Map<InstanceType<typeof THREE.Object3D>, SceneTarget>([
         [laptop, "research"], [cameraObject, "gallery"],
-        ...printGroups.map((group) => [group, "gallery"] as const),
+        [album, "gallery"],
       ]);
       const targetObjects = [...targets.keys()];
       let pointerStart: { x: number; y: number; id: number; time: number } | null = null;
@@ -510,7 +649,7 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
           const side = viewHeight / camera.zoom * minimumPixels / rect.height;
           photoHitTarget.scale.set(side, side, 1);
           photoHitTarget.updateMatrixWorld(true);
-          // Prefer the print in its immediate vicinity; the generous laptop
+          // Prefer the album in its immediate vicinity; the generous laptop
           // geometry remains clickable everywhere outside this small hotspot.
           if (raycaster.intersectObject(photoHitTarget, false).length) return "gallery";
         }
@@ -621,7 +760,7 @@ export function DeskScene({ className = "", focus = "desk", immersive = false, o
   }, []);
 
   return (
-    <div className={`paper-desk ${className}`.trim()} ref={hostRef} role="img" aria-label="A small workspace with a laptop, camera, field notebook and photographs" data-focus={focus === "camera" ? "gallery" : focus} data-ready={ready} data-settled={settled} style={{ position: "relative", width: "100%", height: immersive ? "100%" : undefined, aspectRatio: immersive ? undefined : "1.2" }}>
+    <div className={`paper-desk ${className}`.trim()} ref={hostRef} role="img" aria-label="A small workspace with a laptop, camera, field notebook and a photo album" data-focus={focus === "camera" ? "gallery" : focus} data-ready={ready} data-settled={settled} style={{ position: "relative", width: "100%", height: immersive ? "100%" : undefined, aspectRatio: immersive ? undefined : "1.2" }}>
       <img src="/desk-scene-fallback.svg" alt="" aria-hidden="true" width="720" height="600" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", visibility: ready ? "hidden" : "visible" }} />
     </div>
   );
